@@ -102,6 +102,21 @@ Skyward-installable zip lives at
 It checks each image against its target partition and disables AVB after the
 writes; it is not OnePlus-specific.
 
+## Repairing a stale OTA state
+
+After an OTA, Skyward can still say "Update written, waiting to merge" when
+the target slot has already booted and its snapshots are gone but
+libsnapshot's state file was left at `Initiated`/`Unverified` (for example
+after a manual `fastboot --set-active`). Repair it with:
+
+```sh
+adb shell /system/bin/recovery vab-repair --force
+```
+
+The command backs up `/metadata/ota/state` as `state.before`, refuses while
+a merge is really running or failed, and marks the update merged. Use it
+only after the target slot has started.
+
 ## Known limitations
 
 - Cellular/modem is not started: starting `mss` resets the phone to EDL.

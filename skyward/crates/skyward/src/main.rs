@@ -135,6 +135,14 @@ enum Cmd {
         #[arg(long, default_value = "/dev/dri/card0")]
         card: String,
     },
+    /// Mark a finished OTA as merged when a manual slot switch left
+    /// libsnapshot's state at Initiated/Unverified.
+    #[cfg(target_os = "android")]
+    VabRepair {
+        /// Confirm the target slot has already started and its snapshots are gone.
+        #[arg(long)]
+        force: bool,
+    },
     /// Play the vibration motor's click once, or the ticks of the screen
     /// going off by the power key, saying how strongly and for how long.
     #[cfg(target_os = "android")]
@@ -227,11 +235,12 @@ fn main() -> Result<()> {
     // init starts the recovery service by path with no arguments.
     let started_as = std::env::args_os().next().unwrap_or_default();
     let name = Path::new(&started_as).file_name().unwrap_or_default();
-    if name == "recovery" {
+    // Install scripts run the commands linked to this binary by their names;
+    // a recovery started by init has no arguments and opens the pages.
+    let args: Vec<_> = std::env::args_os().skip(1).collect();
+    if name == "recovery" && args.is_empty() {
         return recovery();
     }
-    // Install scripts run the commands linked to this binary by their names.
-    let args: Vec<_> = std::env::args_os().skip(1).collect();
     if let Some(code) = skyward_install::commands::run(name, &args) {
         std::process::exit(code);
     }
@@ -311,6 +320,17 @@ fn main() -> Result<()> {
             Ok(())
         }
         #[cfg(target_os = "android")]
+        #[cfg(target_os = "android")]
+        Cmd::VabRepair { force } => {
+            let update = skyward_vab::update()?.ok_or_else(|| anyhow!("/metadata is not mounted"))?;
+            println!("update state: {:?}, source: {:?}", update.state, update.source);
+            if !force {
+                return Err(anyhow!("this marks the update merged; pass --force after the target slot booted"));
+            }
+            let update = skyward_vab::repair_merge_state()?;
+            println!("marked the update merged (was source {:?})", update.source);
+            Ok(())
+        }
         Cmd::Haptic { config, position, ticks } => {
             let haptics = DeviceConfig::load(&config)?.haptics.context("the configuration describes no vibration motor")?;
             haptics::probe(&haptics, position, ticks)

@@ -93,6 +93,19 @@ tools/ota-extract/     OTA payload 提取工具
 [**Skyward-cardzip**](https://github.com/SorasakiHinaHusband/Skyward-cardzip)。
 它会先检查每个镜像是否放得进目标分区，写完后再关闭 AVB；不限于一加 12。
 
+## 修复 OTA 状态残留
+
+OTA 完成后，如果目标槽已经启动、snapshots 也没了，但 Skyward 仍显示“更新
+已写入，等待合并”，通常是 libsnapshot 的 `/metadata/ota/state` 还停在
+`Initiated`/`Unverified`（例如手动 `fastboot --set-active` 后）。可以这样修：
+
+```sh
+adb shell /system/bin/recovery vab-repair --force
+```
+
+命令会先把原文件备份成 `state.before`，只有状态确实是“已写入”时才改；
+真正在合并或合并失败时不会动。请确认目标槽已经启动过再执行。
+
 ## 已知限制
 
 - 不启动蜂窝/modem：启动 `mss` 会把手机复位到 EDL；Wi-Fi 不需要它。

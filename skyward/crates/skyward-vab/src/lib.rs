@@ -2,6 +2,7 @@ use anyhow::{anyhow, bail, Context, Result};
 use prost::Message;
 use std::fs;
 use std::io::ErrorKind;
+use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 
 #[cfg(target_os = "android")]
@@ -261,6 +262,45 @@ impl Update {
             _ => None,
         }
     }
+}
+
+/// Mark an update that has already been applied and booted as merged.
+///
+/// This repairs libsnapshot's `state` file when a manual slot switch or an
+/// interrupted reboot left it at `Initiated`/`Unverified` even though the
+/// target slot has started and its snapshots are gone. It refuses while a
+/// merge is actually running or failed, and it keeps the old file as
+/// `state.before`.
+pub fn repair_merge_state() -> Result<Update> {
+    if !skyward_block::mount::is_mount_point(Path::new(METADATA))? {
+        bail!("{METADATA} is not mounted");
+    }
+    let dir = Path::new(OTA_DIR);
+    let mut update = read_update(dir)?;
+    match update.state {
+        UpdateState::Initiated | UpdateState::Unverified => {}
+        UpdateState::MergeCompleted => return Ok(update),
+        other => bail!("the update is {other:?}, not a finished write"),
+    }
+    if let Some(source) = update.source
+        && current_slot()? == Some(source)
+    {
+        bail!("the update's source slot {} is still the current slot", source.letter());
+    }
+    let path = dir.join(STATE);
+    let before = dir.join("state.before");
+    if path.exists() {
+        fs::copy(&path, &before).with_context(|| format!("copy {} to {}", path.display(), before.display()))?;
+    }
+    let mut status = read_status(dir)?;
+    status.state = UpdateState::MergeCompleted as i32;
+    let mut file = fs::File::create(&path).with_context(|| format!("open {}", path.display()))?;
+    use std::io::Write;
+    file.write_all(&status.encode_to_vec()).with_context(|| format!("write {}", path.display()))?;
+    file.sync_all().with_context(|| format!("sync {}", path.display()))?;
+    fs::set_permissions(&path, fs::Permissions::from_mode(0o600))?;
+    update.state = UpdateState::MergeCompleted;
+    Ok(update)
 }
 
 pub fn snapshot_state() -> Result<SnapshotState> {
