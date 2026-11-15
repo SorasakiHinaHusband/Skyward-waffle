@@ -363,14 +363,19 @@ pub fn settings(cx: &Ctx) -> Frame {
     if let Some(r) = slider.below {
         out.push(Hit { rect: r, action: Action::Open(Screen::ScreenOff) });
     }
-    y = widgets::section(&mut c, t, f, slider.bottom, l.pick(["振动", "震動", "Vibration"]));
-    let below = Row::new(l.pick(["触摸振动", "觸控震動", "Touch vibration"])).trail(Trail::Switch(s.vibrate));
-    let vibration = widgets::slider_card(&mut c, t, f, y, Caption::Vibrate, l.pick(["振动强度", "震動強度", "Vibration intensity"]), s.vibration, Some(below));
-    out.push(Hit { rect: vibration.track, action: Action::Slider(Slider::Vibration) });
-    if let Some(r) = vibration.below {
-        out.push(Hit { rect: r, action: Action::Toggle(Switch::Vibrate) });
+    if s.haptics {
+        y = widgets::section(&mut c, t, f, slider.bottom, l.pick(["振动", "震動", "Vibration"]));
+        let below = Row::new(l.pick(["触摸振动", "觸控震動", "Touch vibration"])).trail(Trail::Switch(s.vibrate));
+        let vibration = widgets::slider_card(&mut c, t, f, y, Caption::Vibrate, l.pick(["振动强度", "震動強度", "Vibration intensity"]), s.vibration, Some(below));
+        out.push(Hit { rect: vibration.track, action: Action::Slider(Slider::Vibration) });
+        if let Some(r) = vibration.below {
+            out.push(Hit { rect: r, action: Action::Toggle(Switch::Vibrate) });
+        }
+        y = vibration.bottom;
+    } else {
+        y = slider.bottom;
     }
-    y = widgets::section(&mut c, t, f, vibration.bottom, l.pick(["通用", "一般", "General"]));
+    y = widgets::section(&mut c, t, f, y, l.pick(["通用", "一般", "General"]));
     let mut general_rows = vec![
         Row::new(l.pick(LANGUAGE)).icon(BLUE, Icon::Globe).trail(Trail::Value(l.name())),
         Row::new(l.pick(TIME_ZONE)).icon(ORANGE, Icon::Clock).trail(Trail::Value(l.pick(TIME_ZONES[s.time_zone].0))),

@@ -1294,6 +1294,7 @@ impl<'a> Pages<'a> {
         let named = locale.map(Lang::for_locale).transpose()?;
         app.take_settings(kept.settings(), named);
         app.state.orientation_switch = cfg.display.orientation_switch;
+        app.state.haptics = cfg.haptics.is_some();
         let keeper = Keeper::new(&kept);
         skyward_sys::kmsg(&format!(
             "the pages speak {:?}, {}, and the locale named is {}",

@@ -59,6 +59,7 @@ impl SdeMode {
 
 /// A mode's refresh rate: what the kernel computes, or the number the
 /// mode's name ends in when the kernel gives none, as some Qualcomm modes do.
+#[cfg(any(target_os = "android", test))]
 fn refresh(mode: &drm::control::Mode) -> u32 {
     let told = mode.vrefresh();
     if told > 0 {

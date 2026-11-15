@@ -20,6 +20,9 @@ pub struct State {
     /// place in [`TIME_ZONES`].
     pub time_zone: usize,
     pub vibrate: bool,
+    /// The phone has a vibration motor, so the settings page shows its
+    /// section. A tablet without one leaves the section out.
+    pub haptics: bool,
     /// The pages are laid out with the long edge down, as a tablet held
     /// upright, instead of the display's own landscape mode.
     pub portrait: bool,
@@ -199,6 +202,7 @@ impl Default for State {
             screen_off: 3,
             time_zone: 0,
             vibrate: true,
+            haptics: true,
             portrait: false,
             orientation_switch: false,
             vibration: SLIDER_START,
