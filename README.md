@@ -92,6 +92,14 @@ scripts/extract-ota.sh
 tools/ota-extract/     OTA payload extractor
 ```
 
+## Card-flash zip builder
+
+A standalone tool for turning per-partition port images into a
+Skyward-installable zip lives at
+[**Skyward-cardzip**](https://github.com/SorasakiHinaHusband/Skyward-cardzip).
+It checks each image against its target partition and disables AVB after the
+writes; it is not OnePlus-specific.
+
 ## Known limitations
 
 - Cellular/modem is not started: starting `mss` resets the phone to EDL.
