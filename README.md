@@ -1,3 +1,5 @@
+**English** | [简体中文](README.zh-CN.md)
+
 # Skyward for OnePlus 12 (waffle)
 
 A port of [Skyward](https://github.com/kirklin/skyward) 0.3.1 to the OnePlus
